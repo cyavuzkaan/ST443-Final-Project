@@ -1,0 +1,423 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-12-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(ISLR)
+data <- read.csv("data2.csv.gz")
+# Iterate through label and make them 0 if they are -1, 1 otherwise
+for (i in 1:nrow(data)) {
+  if (data[i, 1] == -1) {
+    data[i, 1] <- 0  
+  } else {
+    data[i, 1] <- 1
+  }
+}
+```
+
+
+```{r}
+# Find duplicate columns
+unique_data <- data[, !duplicated(as.list(data))]
+num_repeated <- ncol(data) - ncol(unique_data)
+cat("The new dataset has dimensions:", dim(unique_data), "\n")
+# Calculate row indices for each split
+set.seed(12)  # Set seed for reproducibility
+unique_data <- unique_data[sample(nrow(unique_data)), ]
+n <- nrow(unique_data)
+end_training <- floor(n * 0.7)  # 70% for training
+end_validation <- floor(n * 0.85)  # Next 10% for validation
+
+# Split the data into training, validation, and testing sets
+training_data <- unique_data[1:end_training, ]  # 70% of the data
+validation_data <- unique_data[(end_training + 1):end_validation, ]  # 10% of the data
+testing_data <- unique_data[(end_validation + 1):n, ]  # Remaining 20% of the data
+
+print(sum(training_data[,1]))
+print(sum(validation_data[,1])) 
+print(sum(testing_data[,1]))
+```
+
+
+```{r}
+# Install dependencies
+install.packages(c("RCurl", "jsonlite"))
+
+# Download and install the latest H2O package from H2O.ai
+install.packages("h2o", repos = c("https://h2o-release.s3.amazonaws.com/h2o/latest_stable/R"))
+
+```
+
+
+```{r}
+#h2o.shutdown(prompt = FALSE)
+options(java.parameters = "-Dai.h2o.disable.xgboost=true")
+library(h2o)
+h2o.init()
+```
+
+<<<<<<< HEAD
+
+
+
+=======
+SECTION 1. CV Hypertunning cost and gamma.
+>>>>>>> b5681abacdb5c50f6e18212b50ce23f3ea9e8cf8
+
+```{r}
+# Load the necessary libraries
+library(h2o)
+<<<<<<< HEAD
+
+=======
+set.seed(12)
+>>>>>>> b5681abacdb5c50f6e18212b50ce23f3ea9e8cf8
+# Initialize H2O with 16GB of memory (adjust if necessary)
+h2o.init(max_mem_size = "16G")
+
+# Convert the training, validation, and test data to H2O frames
+train_h2o <- as.h2o(training_data)
+valid_h2o <- as.h2o(validation_data)
+test_h2o <- as.h2o(testing_data)
+
+<<<<<<< HEAD
+=======
+# Ensure the target variable "label" is a factor for classification tasks
+>>>>>>> b5681abacdb5c50f6e18212b50ce23f3ea9e8cf8
+train_h2o[, "label"] <- as.factor(train_h2o[, "label"])
+valid_h2o[, "label"] <- as.factor(valid_h2o[, "label"])
+test_h2o[, "label"] <- as.factor(test_h2o[, "label"])
+
+<<<<<<< HEAD
+x <- colnames(training_data)[-which(names(training_data) == "label")]  
+y <- "label"
+
+# ---------------------------
+# Train the SVM model with fixed gamma and hyper_param (penalty parameter C)
+
+# Set low computational cost hyperparameters
+gamma_value <- 0.000001     # Example small gamma value
+cost_value <- 10000         # Example small cost (penalty parameter)
+
+# Train the SVM model using h2o.psvm with validation_frame
+svm_model_h2o_svm <- h2o.psvm(
+  x = x,
+  y = y,
+  training_frame = train_h2o,
+  validation_frame = valid_h2o,  # Include validation frame for monitoring performance
+  kernel_type = "gaussian",      # Gaussian (RBF) kernel
+  gamma = gamma_value,
+  hyper_param = cost_value,
+  positive_weight = 1,
+  negative_weight = 10,
+  max_iterations = 100,          # Limit the number of iterations to reduce computation time
+  seed = 123                     # Set seed for reproducibility
+)
+
+# ---------------------------
+# Print model details
+print(svm_model_h2o_svm)
+
+# ---------------------------
+# Make Predictions on the Test Data
+
+predictions_test_h2o_svm <- h2o.predict(svm_model_h2o_svm, test_h2o)
+
+# Convert predictions to an R vector
+predicted_classes <- as.vector(predictions_test_h2o_svm$predict)
+actual_classes <- as.vector(test_h2o$label)
+
+# ---------------------------
+# Compute the Confusion Matrix
+
+conf_matrix <- table(Predicted = predicted_classes, Actual = actual_classes)
+print("Confusion Matrix (Test):")
+print(conf_matrix)
+
+# ---------------------------
+# Calculate Balanced Accuracy
+
+# Extract True Positives (TP), True Negatives (TN), False Positives (FP), and False Negatives (FN)
+tn <- conf_matrix[1, 1]
+tp <- conf_matrix[2, 2]
+fp <- conf_matrix[2, 1]
+fn <- conf_matrix[1, 2]
+
+# Compute Balanced Accuracy
+balanced_acc <- 0.5 * (tp / (tp + fn + 1e-6) + tn / (tn + fp + 1e-6))
+cat("Balanced Accuracy (Test):", round(balanced_acc, 4), "\n")
+
+# ---------------------------
+# Shutdown H2O (optional)
+h2o.shutdown(prompt = FALSE)
+
+```
+
+272
+1] "Confusion Matrix (Test):"
+         Actual
+Predicted  0  1
+        0 97  6
+        1  9  8
+Balanced Accuracy (Test): 0.7433 
+
+113
+[1] "Confusion Matrix (Test):"
+         Actual
+Predicted  0  1
+        0 99  7
+        1  7  7
+Balanced Accuracy (Test): 0.717 
+
+
+```{r}
+=======
+# Define the feature columns (x) and the target column (y)
+x <- colnames(training_data)[-which(names(training_data) == "label")]  # All columns except the target
+y <- "label"  # Target column
+
+# Hyperparameter grid for gamma and cost
+gamma_values <- c(0.00001, 0.0001, 0.001, 0.01)  # Different gamma values
+cost_values <- c(100, 1000, 10000)        # Different cost values
+
+# Placeholder to store results
+results <- data.frame(
+  Gamma = numeric(),
+  Cost = numeric(),
+  BalancedAccuracy = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Loop over gamma and cost values
+for (gamma_value in gamma_values) {
+  for (cost_value in cost_values) {
+    cat("Training SVM with Gamma:", gamma_value, "Cost:", cost_value, "\n")
+    
+    # Train the SVM model using h2o.psvm with validation_frame
+    svm_model <- h2o.psvm(
+      x = x,
+      y = y,
+      training_frame = train_h2o,
+      validation_frame = valid_h2o,
+      kernel_type = "gaussian",
+      gamma = gamma_value,
+      hyper_param = cost_value,
+      max_iterations = 100,
+      seed = 12
+    )
+
+    # Make Predictions on the Test Data
+    predictions <- h2o.predict(svm_model, test_h2o)
+    predicted_classes <- as.vector(predictions$predict)
+    actual_classes <- as.vector(test_h2o$label)
+    
+    # Compute the Confusion Matrix
+    conf_matrix <- table(Predicted = predicted_classes, Actual = actual_classes)
+    
+    # Extract TP, TN, FP, FN (handle missing categories with tryCatch)
+    tn <- tryCatch(conf_matrix[1, 1], error = function(e) 0)
+    tp <- tryCatch(conf_matrix[2, 2], error = function(e) 0)
+    fp <- tryCatch(conf_matrix[2, 1], error = function(e) 0)
+    fn <- tryCatch(conf_matrix[1, 2], error = function(e) 0)
+    
+    # Compute Balanced Accuracy
+    balanced_acc <- 0.5 * (tp / (tp + fn + 1e-6) + tn / (tn + fp + 1e-6))
+    
+    # Store the results
+    results <- rbind(results, data.frame(
+      Gamma = gamma_value,
+      Cost = cost_value,
+      BalancedAccuracy = round(balanced_acc, 4)
+    ))
+  }
+}
+
+# Print the results
+print("Hyperparameter Tuning Results:")
+print(results)
+
+# Find the best model based on balanced accuracy
+best_result <- results[which.max(results$BalancedAccuracy), ]
+cat("Best Gamma:", best_result$Gamma, "\n")
+cat("Best Cost:", best_result$Cost, "\n")
+cat("Best Balanced Accuracy:", best_result$BalancedAccuracy, "\n")
+
+
+
+```
+
+
+ DOWN HERE IS WITHOUT THE CROSS VALIDATION
+```{r}
+# Load the necessary libraries
+>>>>>>> b5681abacdb5c50f6e18212b50ce23f3ea9e8cf8
+library(h2o)
+
+# Initialize H2O with 16GB of memory (adjust if necessary)
+h2o.init(max_mem_size = "16G")
+
+# Convert the training, validation, and test data to H2O frames
+train_h2o <- as.h2o(training_data)
+valid_h2o <- as.h2o(validation_data)
+test_h2o <- as.h2o(testing_data)
+
+<<<<<<< HEAD
+=======
+# Ensure the target variable "label" is a factor for classification tasks
+>>>>>>> b5681abacdb5c50f6e18212b50ce23f3ea9e8cf8
+train_h2o[, "label"] <- as.factor(train_h2o[, "label"])
+valid_h2o[, "label"] <- as.factor(valid_h2o[, "label"])
+test_h2o[, "label"] <- as.factor(test_h2o[, "label"])
+
+<<<<<<< HEAD
+x <- colnames(training_data)[-which(names(training_data) == "label")]  
+y <- "label"
+
+# ---------------------------
+# Define hyperparameter grid
+hyper_params <- list(
+  gamma = c(0.000001, 0.00001),        # Example gamma values
+  hyper_param = c(10000, 100000),        # Example cost (penalty parameter) values
+  negative_weight = c(3, 5, 7)                 # Negative weight values
+)
+
+# Define custom metric for balanced accuracy
+balanced_accuracy <- function(predicted, actual) {
+  conf_matrix <- table(Predicted = predicted_classes, Actual = actual_classes)
+  
+  tn <- ifelse("0" %in% rownames(conf_matrix) && "0" %in% colnames(conf_matrix), conf_matrix[0, 0], 0)
+  tp <- ifelse("1" %in% rownames(conf_matrix) && "1" %in% colnames(conf_matrix), conf_matrix[1, 1], 0)
+  fp <- ifelse("1" %in% rownames(conf_matrix) && "0" %in% colnames(conf_matrix), conf_matrix[1, 0], 0)
+  fn <- ifelse("0" %in% rownames(conf_matrix) && "1" %in% colnames(conf_matrix), conf_matrix[0, 1], 0)
+  
+  # Calculate balanced accuracy
+  bal_acc <- 0.5 * (tp / (tp + fn + 1e-6) + tn / (tn + fp + 1e-6))
+  return(bal_acc)
+}
+
+# Perform grid search with cross-validation
+grid <- h2o.grid(
+  algorithm = "psvm",
+  grid_id = "svm_grid",
+  x = x,
+  y = y,
+  training_frame = train_h2o,
+  validation_frame = valid_h2o,
+  kernel_type = "gaussian",
+  max_iterations = 100,                        # Limit iterations
+  seed = 123,                                  # Set seed for reproducibility
+  hyper_params = hyper_params,
+  search_criteria = list(strategy = "Cartesian"),  # Exhaustive grid search
+  fold_assignment = "Stratified",              # Ensure balanced class distribution in folds
+  nfolds = 5                                   # 5-fold cross-validation
+)
+
+# ---------------------------
+# Retrieve grid search results
+grid_results <- h2o.getGrid(
+  grid_id = "svm_grid",
+  sort_by = "balanced_accuracy",  # Sort by balanced accuracy
+  decreasing = TRUE               # Higher is better
+)
+
+print(grid_results)
+
+# Select the best model from the grid search
+best_model <- h2o.getModel(grid_results@model_ids[[1]])
+=======
+# Define the feature columns (x) and the target column (y)
+x <- colnames(training_data)[-which(names(training_data) == "label")]  # All columns except the target
+y <- "label"  # Target column
+
+# ---------------------------
+# Train the SVM model with fixed gamma and hyper_param (penalty parameter C)
+
+# Set low computational cost hyperparameters
+gamma_value <- 0.000001     # Example small gamma value
+cost_value <- 10000         # Example small cost (penalty parameter)
+
+# Train the SVM model using h2o.psvm with validation_frame
+svm_model_h2o_svm <- h2o.psvm(
+  x = x,
+  y = y,
+  training_frame = train_h2o,
+  validation_frame = valid_h2o,  # Include validation frame for monitoring performance
+  kernel_type = "gaussian",      # Gaussian (RBF) kernel
+  gamma = gamma_value,
+  hyper_param = cost_value,
+  max_iterations = 100,          # Limit the number of iterations to reduce computation time
+  seed = 12                     # Set seed for reproducibility
+)
+
+# ---------------------------
+# Print model details
+print(svm_model_h2o_svm)
+>>>>>>> b5681abacdb5c50f6e18212b50ce23f3ea9e8cf8
+
+# ---------------------------
+# Make Predictions on the Test Data
+
+<<<<<<< HEAD
+predictions_test_h2o_svm <- h2o.predict(best_model, test_h2o)
+=======
+predictions_test_h2o_svm <- h2o.predict(svm_model_h2o_svm, test_h2o)
+>>>>>>> b5681abacdb5c50f6e18212b50ce23f3ea9e8cf8
+
+# Convert predictions to an R vector
+predicted_classes <- as.vector(predictions_test_h2o_svm$predict)
+actual_classes <- as.vector(test_h2o$label)
+
+# ---------------------------
+# Compute the Confusion Matrix
+
+conf_matrix <- table(Predicted = predicted_classes, Actual = actual_classes)
+print("Confusion Matrix (Test):")
+print(conf_matrix)
+
+# ---------------------------
+<<<<<<< HEAD
+# Calculate Balanced Accuracy for Test Data
+
+=======
+# Calculate Balanced Accuracy
+
+# Extract True Positives (TP), True Negatives (TN), False Positives (FP), and False Negatives (FN)
+>>>>>>> b5681abacdb5c50f6e18212b50ce23f3ea9e8cf8
+tn <- conf_matrix[1, 1]
+tp <- conf_matrix[2, 2]
+fp <- conf_matrix[2, 1]
+fn <- conf_matrix[1, 2]
+
+# Compute Balanced Accuracy
+balanced_acc <- 0.5 * (tp / (tp + fn + 1e-6) + tn / (tn + fp + 1e-6))
+cat("Balanced Accuracy (Test):", round(balanced_acc, 4), "\n")
+
+# ---------------------------
+# Shutdown H2O (optional)
+h2o.shutdown(prompt = FALSE)
+
+```
+
+<<<<<<< HEAD
+=======
+
+
+
+
+>>>>>>> b5681abacdb5c50f6e18212b50ce23f3ea9e8cf8
